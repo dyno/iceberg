@@ -41,6 +41,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
 import software.amazon.awssdk.services.glue.GlueClientBuilder;
+import software.amazon.awssdk.services.sts.StsClientBuilder;
 
 public class AwsProperties implements Serializable {
 
@@ -160,6 +161,13 @@ public class AwsProperties implements Serializable {
   public static final String CLIENT_ASSUME_ROLE_SESSION_NAME = "client.assume-role.session-name";
 
   /**
+   * Used by {@link AssumeRoleAwsClientFactory}. Optional credentials provider to provide the
+   * initial credentials.
+   */
+  public static final String CLIENT_ASSUME_ROLE_CREDENTIALS_PROVIDER =
+      "client.assume-role.credentials-provider";
+
+  /**
    * Used by {@link LakeFormationAwsClientFactory}. The table name used as part of lake formation
    * credentials request.
    */
@@ -213,6 +221,7 @@ public class AwsProperties implements Serializable {
   private final int clientAssumeRoleTimeoutSec;
   private final String clientAssumeRoleRegion;
   private final String clientAssumeRoleSessionName;
+  private final String clientAssumeRoleCredentialsProvider;
   private final String clientCredentialsProvider;
   private final Map<String, String> clientCredentialsProviderProperties;
 
@@ -239,6 +248,7 @@ public class AwsProperties implements Serializable {
     this.clientAssumeRoleExternalId = null;
     this.clientAssumeRoleRegion = null;
     this.clientAssumeRoleSessionName = null;
+    this.clientAssumeRoleCredentialsProvider = null;
     this.clientCredentialsProvider = null;
     this.clientCredentialsProviderProperties = null;
 
@@ -264,6 +274,8 @@ public class AwsProperties implements Serializable {
     this.clientAssumeRoleExternalId = properties.get(CLIENT_ASSUME_ROLE_EXTERNAL_ID);
     this.clientAssumeRoleRegion = properties.get(CLIENT_ASSUME_ROLE_REGION);
     this.clientAssumeRoleSessionName = properties.get(CLIENT_ASSUME_ROLE_SESSION_NAME);
+    this.clientAssumeRoleCredentialsProvider =
+        properties.get(CLIENT_ASSUME_ROLE_CREDENTIALS_PROVIDER);
     this.clientCredentialsProvider =
         properties.get(AwsClientProperties.CLIENT_CREDENTIALS_PROVIDER);
     this.clientCredentialsProviderProperties =
@@ -400,6 +412,13 @@ public class AwsProperties implements Serializable {
   public AwsCredentialsProvider restCredentialsProvider() {
     return credentialsProvider(
         this.restAccessKeyId, this.restSecretAccessKey, this.restSessionToken);
+  }
+
+  public <T extends StsClientBuilder> void applyClientAssumeRoleCredentialsProviderConfigurations(
+      T builder) {
+    if (clientAssumeRoleCredentialsProvider != null) {
+      builder.credentialsProvider(credentialsProvider(clientAssumeRoleCredentialsProvider));
+    }
   }
 
   private Set<software.amazon.awssdk.services.sts.model.Tag> toStsTags(
